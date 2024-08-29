@@ -1,0 +1,187 @@
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Képek betöltése
+const astleyImage = new Image();
+astleyImage.src = 'astley.png';
+
+const enemyImages = {
+    weak: 'idosek.png',
+    average: 'koverlaszlo.png',
+    advanced: 'nemethszilard.png',
+    pro: 'viktor.png'
+};
+
+const enemySpeed = {
+	weak: 2,
+	average: 5,
+	advanced: 10,
+	pro: 20
+};
+
+// Játékos tulajdonságai
+let player = {
+    x: canvas.width / 5,
+    y: canvas.height - 200,
+    width: 50,
+    height: 120,
+    speed: 15,
+    lives: 500,
+    bullets: []
+};
+
+// Ellenségek tárolása
+let enemies = [];
+
+// Pontszámláló
+let score = 0;
+
+// Billentyűk kezelése
+let keys = {};
+
+document.addEventListener('keydown', function (e) {
+    keys[e.key] = true;
+});
+
+document.addEventListener('keyup', function (e) {
+    keys[e.key] = false;
+});
+
+function createEnemy(type, x, y) {
+    const enemy = {
+		x: canvas.width,
+		y: canvas.height - 200,
+        width: 50,
+        height: 120,
+        type: type,
+        image: new Image(),
+        speed: enemySpeed[type],
+    };
+    enemy.image.src = enemyImages[type];
+    enemies.push(enemy);
+}
+
+// Lövés indítása
+document.addEventListener('keydown', function (e) {
+    if (e.key === ' ') {
+        player.bullets.push({
+            x: player.x + player.width / 2 - 2.5,
+            y: player.y,
+            width: 10,
+            height: 20,
+            speed: 7
+        });
+    }
+});
+
+// Ellenségek létrehozása
+setInterval(() => {
+    const enemyTypes = ['weak', 'average', 'advanced', 'pro'];
+    const type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+    const x = Math.random() * (canvas.width - 50);
+    createEnemy(type, x, -60);
+}, 1000);
+
+
+
+function update() {
+    // Játékos mozgatása
+    if (keys['ArrowLeft'] && player.x > 0) {
+        player.x -= player.speed;
+    }
+    if (keys['ArrowRight'] && player.x < canvas.width - player.width) {
+        player.x += player.speed;
+    }
+
+    // Lövedékek mozgatása
+    for (let i = 0; i < player.bullets.length; i++) {
+        const bullet = player.bullets[i];
+        bullet.x += bullet.speed;
+
+        // Törölje a képernyőn kívüli lövedékeket
+        if (bullet.x < 0) {
+            player.bullets.splice(i, 1);
+            i--;
+        }
+    }
+
+    // Ellenségek mozgatása
+    for (let i = 0; i < enemies.length; i++) {
+        const enemy = enemies[i];
+        enemy.x -= enemy.speed;
+		
+
+        // Ütközés ellenőrzése lövedékekkel
+        for (let j = 0; j < player.bullets.length; j++) {
+            const bullet = player.bullets[j];
+            if (
+                bullet.x < enemy.x + enemy.width &&
+                bullet.x + bullet.width > enemy.x &&
+                bullet.y < enemy.y + enemy.height &&
+                bullet.y + bullet.height > enemy.y
+            ) {
+                // Ellenség elpusztítása és pont hozzáadása
+                player.bullets.splice(j, 1);
+                enemies.splice(i, 1);
+                i--;
+
+                // Pont hozzáadása
+                if (enemy.type === 'weak') score += 5;
+                if (enemy.type === 'average') score += 10;
+                if (enemy.type === 'advanced') score += 15;
+                if (enemy.type === 'pro') score += 50;
+
+                break;
+            }
+        }
+
+        // Ellenőrzés, hogy az ellenség elérte-e a játékost
+        if (enemy.x < 0) {
+            enemies.splice(i, 1);
+            i--;
+
+            // Életpontok csökkentése
+            player.lives -= 10;
+        }
+    }
+
+    // Játék vége
+    if (player.lives <= 0) {
+        alert('Game Over! Pontszám: ' + score);
+        document.location.reload();
+    }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Játékos rajzolása
+    ctx.drawImage(astleyImage, player.x, player.y, player.width, player.height);
+
+    // Lövedékek rajzolása
+    for (let bullet of player.bullets) {
+        ctx.fillStyle = 'red';
+        ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+    }
+
+    // Ellenségek rajzolása
+    for (let enemy of enemies) {
+        ctx.drawImage(enemy.image, enemy.x, enemy.y, enemy.width, enemy.height);
+    }
+
+    // Pontszámláló
+    ctx.fillStyle = 'white';
+    ctx.font = '20px Arial';
+    ctx.fillText('Pontszám: ' + score, 10, 30);
+
+    // Életpontok
+    ctx.fillText('Élet: ' + player.lives, 10, 60);
+}
+
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
