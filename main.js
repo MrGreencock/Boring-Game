@@ -10,7 +10,6 @@ let currentEnemyTypeIndex = 1;
 const enemyTypes = ['weak', 'average', 'advanced', 'pro'];
 let enemiesDefeated = 0;
 const enemyMessages = [
-    "Jaj! Még nincs vége, mert jön a közepesen gonosz...",
     "Jaj! Megjelent Kövér László!!!",
     "Óh jaj! Németh Szilárd fel akar falni téged!",
     "Ó ne, csak ezt ne!!! A főni, Viktor!!!"
